@@ -72,7 +72,6 @@ The design ensures **ACID-compliant transaction processing** and **data consiste
 # 🏗️ Architecture
 
 ## 🔄 System Flow
-```
 
 ![Architecture Diagram](docs/architecture.png)
 
