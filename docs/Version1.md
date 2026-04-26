@@ -1,9 +1,8 @@
-````md
 # 🏦 Mini Core Banking Transaction Processing System — Version 1 (Complete Guide)
 
 ---
 
-## 📌 1. Project Overview
+# 📌 1. Project Overview
 
 This project simulates a **real-world banking backend system** using Oracle PL/SQL.
 
@@ -17,19 +16,19 @@ It models how banks:
 
 ---
 
-## 🎯 Core Objective
+# 🎯 2. Core Objective
 
 Build a **transaction-safe, consistent, and auditable system** that follows:
 
-- Data integrity  
-- ACID principles  
-- Real banking logic  
+- Data Integrity  
+- ACID Principles  
+- Real Banking Logic  
 
 ---
 
-## 🧠 2. Key Concepts Used
+# 🧠 3. Key Concepts Used
 
-### 🔹 ACID Properties
+## 🔹 ACID Properties
 
 - **Atomicity** → All steps succeed or none  
 - **Consistency** → Data remains valid  
@@ -38,28 +37,28 @@ Build a **transaction-safe, consistent, and auditable system** that follows:
 
 ---
 
-### 🔹 Concurrency Control
+## 🔹 Concurrency Control
 
-- Row-level locking (`FOR UPDATE`)  
-- Deadlock prevention (ordered locking)  
+- Row-level locking using `FOR UPDATE`  
+- Deadlock prevention using ordered locking  
 
 ---
 
-### 🔹 Error Handling
+## 🔹 Error Handling
 
 - `RAISE_APPLICATION_ERROR`  
 - Exception blocks  
 
 ---
 
-### 🔹 Logging
+## 🔹 Logging
 
 - Error logging  
 - Audit logging  
 
 ---
 
-## 🏗️ 3. System Architecture
+# 🏗️ 4. System Architecture
 
 ```text
 User Action
@@ -75,26 +74,26 @@ Audit Trigger Fires
 Audit Logs Stored
    ↓
 (If Error) → Error Logs Stored
-````
+```
 
 ---
 
-## 🧱 4. Database Design
+# 🧱 5. Database Design
 
-### 📄 accounts
+## 📄 accounts
 
 | Column       | Description           |
-| ------------ | --------------------- |
+|--------------|-----------------------|
 | account_id   | Unique account number |
 | account_name | Account holder name   |
 | balance      | Current balance       |
 
 ---
 
-### 📄 transactions
+## 📄 transactions
 
 | Column       | Description                   |
-| ------------ | ----------------------------- |
+|--------------|-------------------------------|
 | txn_id       | Transaction ID                |
 | from_account | Sender                        |
 | to_account   | Receiver                      |
@@ -104,10 +103,10 @@ Audit Logs Stored
 
 ---
 
-### 📄 error_logs
+## 📄 error_logs
 
 | Column         | Description          |
-| -------------- | -------------------- |
+|----------------|----------------------|
 | error_id       | Unique ID            |
 | error_message  | Error details        |
 | procedure_name | Where error occurred |
@@ -116,10 +115,10 @@ Audit Logs Stored
 
 ---
 
-### 📄 audit_logs
+## 📄 audit_logs
 
 | Column      | Description      |
-| ----------- | ---------------- |
+|-------------|------------------|
 | audit_id    | Unique ID        |
 | account_id  | Affected account |
 | old_balance | Before update    |
@@ -128,87 +127,85 @@ Audit Logs Stored
 
 ---
 
-## ⚙️ 5. Core Procedures
+# ⚙️ 6. Core Procedures
+
+## 🏗️ create_account
+
+- Creates a new account  
+- Initializes balance  
 
 ---
 
-### 🏗️ create_account
+## 💰 deposit
 
-* Creates new account
-* Initializes balance
-
----
-
-### 💰 deposit
-
-* Validates account
-* Adds balance
-* Logs transaction
-* Commits
+- Validates account  
+- Adds balance  
+- Logs transaction  
+- Commits  
 
 ---
 
-### 💸 withdraw
+## 💸 withdraw
 
-* Validates account
-* Checks balance
-* Deducts money
-* Logs transaction
-
----
-
-### 🔁 transfer_funds (MOST IMPORTANT)
-
-Handles full money transfer flow:
+- Validates account  
+- Checks balance  
+- Deducts money  
+- Logs transaction  
 
 ---
 
-## 🔍 Transfer Flow
+## 🔁 transfer_funds (MOST IMPORTANT)
 
-1. Validate input
-2. Lock accounts (`FOR UPDATE`)
-3. Prevent deadlock (ordered locking)
-4. Check balance
-5. Create SAVEPOINT
-6. Debit sender
-7. Credit receiver
-8. Insert transaction
-9. Commit
+Handles the complete money transfer lifecycle:
 
 ---
 
-## 🔒 Row Locking
+# 🔍 7. Transfer Flow
+
+1. Validate input  
+2. Lock accounts (`FOR UPDATE`)  
+3. Prevent deadlock (ordered locking)  
+4. Check balance  
+5. Create SAVEPOINT  
+6. Debit sender  
+7. Credit receiver  
+8. Insert transaction  
+9. Commit  
+
+---
+
+# 🔒 8. Row Locking
 
 ```sql
 SELECT ... FOR UPDATE;
 ```
 
-👉 Prevents concurrent modification
+👉 Prevents concurrent modification  
 
 ---
 
-## 🔁 Savepoint Usage
+# 🔁 9. Savepoint Usage
 
 ```sql
 SAVEPOINT before_transaction;
 ROLLBACK TO before_transaction;
 ```
 
-👉 Allows partial rollback
+👉 Allows partial rollback  
 
 ---
 
-## ⚠️ 6. Exception Handling
+# ⚠️ 10. Exception Handling
 
 Handled cases:
 
-* Invalid account
-* Insufficient balance
-* System errors
+- Invalid account  
+- Insufficient balance  
+- System errors  
 
 ---
 
-### Example
+## Example
 
 ```sql
 RAISE_APPLICATION_ERROR(-20001, 'Invalid account');
@@ -216,123 +213,131 @@ RAISE_APPLICATION_ERROR(-20001, 'Invalid account');
 
 ---
 
-## 🧾 7. Audit System
+# 🧾 11. Audit System
 
-Trigger tracks balance changes:
+- Trigger tracks balance changes  
+- Stores:
+  - Old balance  
+  - New balance  
+  - Timestamp  
 
-* Old balance
-* New balance
-* Timestamp
-
-👉 Ensures full traceability
+👉 Ensures full traceability  
 
 ---
 
-## 🪵 8. Logging System
+# 🪵 12. Logging System
 
-### Error Logging Procedure
+## Error Logging Procedure
 
-* Stores errors in `error_logs`
-* Uses autonomous transaction
+- Stores errors in `error_logs`  
+- Uses autonomous transaction  
 
 ```sql
 PRAGMA AUTONOMOUS_TRANSACTION;
 ```
 
-👉 Ensures logs persist even after rollback
+👉 Ensures logs persist even after rollback  
 
 ---
 
-## 🔥 9. Deadlock Concept
+# 🔥 13. Deadlock Concept
 
-### ❌ Problem
+## ❌ Problem
 
 Two transactions lock resources in different order:
 
 ```text
-Session A: 101 → 102
-Session B: 102 → 101
+Session A: 101 → 102  
+Session B: 102 → 101  
 ```
 
-👉 Deadlock
+👉 Leads to deadlock  
 
 ---
 
-### ✅ Solution
+## ✅ Solution
 
-Always lock in same order:
+Always lock resources in the same order:
 
 ```text
 101 → 102
 ```
 
-👉 Prevents deadlock
+👉 Prevents deadlock  
 
 ---
 
-## 🧪 10. Testing Scenarios
+# 🧪 14. Testing Scenarios
+
+## ✅ Normal Transfer
+
+- Balance updates correctly  
+- Transaction recorded  
 
 ---
 
-### ✅ Normal Transfer
+## ❌ Insufficient Balance
 
-* Balance updates correctly
-* Transaction recorded
-
----
-
-### ❌ Insufficient Balance
-
-* Error raised
-* No update
+- Error raised  
+- No update  
 
 ---
 
-### ❌ Invalid Account
+## ❌ Invalid Account
 
-* Exception triggered
-* Logged
-
----
-
-### 🔒 Concurrent Transactions
-
-* No data corruption
-* Proper locking
+- Exception triggered  
+- Logged  
 
 ---
 
-## 📊 11. Reports
+## 🔒 Concurrent Transactions
+
+- No data corruption  
+- Proper locking ensured  
+
+---
+
+# 📊 15. Reports
 
 Using cursors:
 
-* Daily transactions
-* Failed transactions
-* Top accounts
+- Daily transactions  
+- Failed transactions  
+- Top accounts  
 
 ---
 
-## 🧠 12. Real-World Mapping
+# 🧠 16. Real-World Mapping
 
-| System         | Real Example      |
-| -------------- | ----------------- |
-| transfer_funds | UPI / IMPS        |
-| deposit        | ATM deposit       |
-| withdraw       | ATM withdrawal    |
-| audit_logs     | Bank audit trail  |
-| error_logs     | System monitoring |
-
----
-
-## 🔥 13. Key Strengths of This Project
-
-* Transaction-safe
-* Concurrency-safe
-* Audit-ready
-* Error-resilient
-* Real banking logic
+| System Feature   | Real Banking Example |
+|-----------------|---------------------|
+| transfer_funds  | UPI / IMPS          |
+| deposit         | ATM deposit         |
+| withdraw        | ATM withdrawal      |
+| audit_logs      | Bank audit trail    |
+| error_logs      | System monitoring   |
 
 ---
 
-```
-```
+# 🔥 17. Key Strengths of This Project
+
+- Transaction-safe  
+- Concurrency-safe  
+- Audit-ready  
+- Error-resilient  
+- Real banking logic  
+
+---
+
+# 🚀 Final Summary
+
+This project mimics **core banking transaction processing systems** by combining:
+
+- Strong database design  
+- Reliable transaction handling  
+- Robust error management  
+- Real-world concurrency control  
+
+👉 It forms a **solid foundation for Oracle Financial Services (OFSS) roles** and real banking systems like Flexcube.
+
+---
