@@ -58,10 +58,20 @@ REFERENCES accounts(account_id);
    STEP 3: ADD BUSINESS RULE CONSTRAINTS
    ============================================================ */
 
--- Restrict transaction type to valid values
+
 ALTER TABLE transactions 
-ADD CONSTRAINT chk_txn_type 
+MODIFY txn_type NOT NULL;
+
+ALTER TABLE transactions 
+MODIFY txn_channel NOT NULL;
+
+ALTER TABLE transactions 
+ADD CONSTRAINT chk_txn_type_v2
 CHECK (txn_type IN ('DEPOSIT', 'WITHDRAW', 'TRANSFER'));
+
+ALTER TABLE transactions 
+ADD CONSTRAINT chk_txn_channel
+CHECK (txn_channel IN ('UPI', 'IMPS', 'NEFT', 'ATM', 'CASH'));
 
 -- Restrict transaction status to valid values
 ALTER TABLE transactions 
@@ -123,3 +133,6 @@ VALUES (
 
 -- Retrieve all transaction records
 SELECT * FROM transactions;
+
+
+

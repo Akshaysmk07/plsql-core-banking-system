@@ -1,81 +1,133 @@
 /* ============================================================
-   MODULE:       Core Banking - Fund Transfer (With Locking)
+   MODULE:       Core Banking - Fund Transfer
    OBJECT:       TRANSFER_FUNDS
-   DESCRIPTION:  Transfers amount between two accounts using
-                 row-level locking to prevent race conditions
+   DESCRIPTION:  Transfers funds between accounts with support
+                 for transaction types (UPI / IMPS / NEFT),
+                 limit validation, locking, and error handling
+   AUTHOR:       Akshay
+   CREATED ON:   27/04/2026
    ============================================================ */
 
-create or replace PROCEDURE transfer_funds (
+
+CREATE OR REPLACE PROCEDURE transfer_funds (
     p_from_account IN NUMBER,
     p_to_account   IN NUMBER,
-    p_amount       IN NUMBER
+    p_amount       IN NUMBER,
+    p_txn_type     IN VARCHAR2
 )
 IS
-    v_balance NUMBER;
+    v_balance         NUMBER;
+    v_limit           NUMBER;
+    v_sender_status   VARCHAR2(10);
+    v_receiver_status VARCHAR2(10);
 BEGIN
-    -- Step 1: Validate accounts are different
+    /* ----------------------------------------------------------
+       STEP 1: BASIC VALIDATION
+       ---------------------------------------------------------- */
+
     IF p_from_account = p_to_account THEN
         RAISE_APPLICATION_ERROR(-20003, 'Sender and receiver cannot be same');
     END IF;
 
-    -- Step 2: Validate amount
-    IF p_amount <= 0 THEN
+    IF p_amount IS NULL OR p_amount <= 0 THEN
         RAISE_APPLICATION_ERROR(-20004, 'Invalid transfer amount');
     END IF;
 
-    -- Step 3: Lock accounts
-    IF p_from_account < p_to_account THEN
-        SELECT balance INTO v_balance
-        FROM accounts
-        WHERE account_id = p_from_account
-        FOR UPDATE;
+    /* ----------------------------------------------------------
+       STEP 2: CREATE SAVEPOINT (EARLY)
+       ---------------------------------------------------------- */
+    SAVEPOINT before_transaction;
 
-        SELECT balance INTO v_balance
-        FROM accounts
-        WHERE account_id = p_to_account
-        FOR UPDATE;
-    ELSE
-        SELECT balance INTO v_balance
-        FROM accounts
-        WHERE account_id = p_to_account
-        FOR UPDATE;
+    /* ----------------------------------------------------------
+       STEP 3: FETCH TRANSACTION LIMIT
+       ---------------------------------------------------------- */
+    SELECT max_limit INTO v_limit
+    FROM transaction_types
+    WHERE txn_type = p_txn_type;
 
-        SELECT balance INTO v_balance
-        FROM accounts
-        WHERE account_id = p_from_account
-        FOR UPDATE;
+    /* ----------------------------------------------------------
+       STEP 4: VALIDATE LIMIT
+       ---------------------------------------------------------- */
+    IF p_amount > v_limit THEN
+        RAISE_APPLICATION_ERROR(-20042, 'Exceeds limit for ' || p_txn_type);
     END IF;
 
-    -- Step 5: SAVEPOINT
-    SAVEPOINT before_transaction;
-    
-    -- Step 4: Check sender balance
-    SELECT balance INTO v_balance
-    FROM accounts
-    WHERE account_id = p_from_account;
+    /* ----------------------------------------------------------
+       STEP 5: LOCK ACCOUNTS (DEADLOCK PREVENTION)
+       ---------------------------------------------------------- */
+    IF p_from_account < p_to_account THEN
+
+        SELECT balance, status INTO v_balance, v_sender_status
+        FROM accounts
+        WHERE account_id = p_from_account
+        FOR UPDATE;
+
+        SELECT status INTO v_receiver_status
+        FROM accounts
+        WHERE account_id = p_to_account
+        FOR UPDATE;
+
+    ELSE
+
+        SELECT status INTO v_receiver_status
+        FROM accounts
+        WHERE account_id = p_to_account
+        FOR UPDATE;
+
+        SELECT balance, status INTO v_balance, v_sender_status
+        FROM accounts
+        WHERE account_id = p_from_account
+        FOR UPDATE;
+
+    END IF;
+
+    /* ----------------------------------------------------------
+       STEP 6: VALIDATE ACCOUNT STATUS
+       ---------------------------------------------------------- */
+
+    IF v_sender_status != 'ACTIVE' THEN
+        RAISE_APPLICATION_ERROR(-20043, 'Sender account is not ACTIVE');
+    END IF;
+
+    IF v_receiver_status != 'ACTIVE' THEN
+        RAISE_APPLICATION_ERROR(-20044, 'Receiver account is not ACTIVE');
+    END IF;
+
+    /* ----------------------------------------------------------
+       STEP 7: CHECK BALANCE
+       ---------------------------------------------------------- */
 
     IF v_balance < p_amount THEN
         RAISE_APPLICATION_ERROR(-20002, 'Insufficient balance');
     END IF;
 
+    /* ----------------------------------------------------------
+       STEP 8: DEBIT SENDER
+       ---------------------------------------------------------- */
 
-    -- Step 6: Debit sender
     UPDATE accounts
     SET balance = balance - p_amount
     WHERE account_id = p_from_account;
 
-    -- Step 7: Credit receiver
+    /* ----------------------------------------------------------
+       STEP 9: CREDIT RECEIVER
+       ---------------------------------------------------------- */
+
     UPDATE accounts
     SET balance = balance + p_amount
     WHERE account_id = p_to_account;
 
-    -- Step 8: Insert transaction
+    /* ----------------------------------------------------------
+       STEP 10: INSERT TRANSACTION
+       ---------------------------------------------------------- */
+
     INSERT INTO transactions (
         txn_id,
         from_account,
         to_account,
         amount,
         txn_type,
+        txn_channel,
         status
     ) VALUES (
         transactions_seq.NEXTVAL,
@@ -83,9 +135,13 @@ BEGIN
         p_to_account,
         p_amount,
         'TRANSFER',
+        p_txn_type,
         'SUCCESS'
     );
 
+    /* ----------------------------------------------------------
+       STEP 11: COMMIT
+       ---------------------------------------------------------- */
     COMMIT;
 
     DBMS_OUTPUT.PUT_LINE('Transfer successful');
@@ -93,55 +149,97 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         ROLLBACK;
-        log_error('Invalid account', 'TRANSFER_FUNDS', p_from_account);
-        RAISE_APPLICATION_ERROR(-20001, 'Invalid account');
+        log_error('Invalid account or txn type', 'TRANSFER_FUNDS', p_from_account);
+        RAISE_APPLICATION_ERROR(-20001, 'Invalid account or transaction type');
 
     WHEN OTHERS THEN
         ROLLBACK TO before_transaction;
         log_error(SQLERRM, 'TRANSFER_FUNDS', p_from_account);
         RAISE_APPLICATION_ERROR(-20005, 'System error: ' || SQLERRM);
 END;
+/
+
 /* ============================================================
-   TEST CASE 1: VALID TRANSFER
+   TEST CASE 1: VALID UPI TRANSFER
    ============================================================ */
+BEGIN
+    transfer_funds(201, 202, 5000, 'UPI');
+END;
+/
+
+/* ============================================================
+   TEST CASE 2: LIMIT EXCEEDED (UPI)
+   ============================================================ */
+BEGIN
+    transfer_funds(201, 202, 200000, 'UPI');
+END;
+/
+
+/* ============================================================
+   TEST CASE 3: INVALID TRANSACTION TYPE
+   ============================================================ */
+BEGIN
+    transfer_funds(201, 202, 5000, 'XYZ');
+END;
+/
+
+/* ============================================================
+   TEST CASE 4: INACTIVE ACCOUNT
+   ============================================================ */
+UPDATE accounts SET status = 'INACTIVE' WHERE account_id = 201;
 
 BEGIN
-    transfer_funds(101, 102, 500);
+    transfer_funds(201, 202, 1000, 'IMPS');
+END;
+/
+
+/* ============================================================
+   RESET ACCOUNT STATUS
+   ============================================================ */
+UPDATE accounts SET status = 'ACTIVE' WHERE account_id = 201;
+COMMIT;
+
+
+/* ============================================================
+   TEST CASE 5: VALID TRANSFER (IMPS)
+   ============================================================ */
+BEGIN
+    transfer_funds(101, 102, 500, 'IMPS');
 END;
 /
 
 /* ============================================================
    VERIFY BALANCES
    ============================================================ */
-
-SELECT balance FROM accounts WHERE account_id = 101;
-/
-SELECT balance FROM accounts WHERE account_id = 102;
+SELECT account_id, balance FROM accounts 
+WHERE account_id IN (101, 102);
 /
 
 /* ============================================================
    VERIFY TRANSACTION ENTRY
    ============================================================ */
-
 SELECT * FROM transactions 
-WHERE txn_type = 'TRANSFER';
+WHERE txn_channel IN ('UPI','IMPS','NEFT');
 /
 
 /* ============================================================
-   TEST CASE 2: INSUFFICIENT BALANCE (SHOULD FAIL)
+   TEST CASE 6: INSUFFICIENT BALANCE
    ============================================================ */
-
 BEGIN
-    transfer_funds(101, 102, 9999999);
+    transfer_funds(101, 102, 9999999, 'NEFT');
 END;
 /
 
 /* ============================================================
-   TEST CASE 3: INVALID ACCOUNT (SHOULD FAIL)
+   TEST CASE 7: INVALID ACCOUNT
    ============================================================ */
-
 BEGIN
-    transfer_funds(999, 102, 500);
+    transfer_funds(999, 102, 500, 'IMPS');
 END;
 /
-select * from error_logs ;
+
+/* ============================================================
+   VERIFY ERROR LOGS
+   ============================================================ */
+SELECT * FROM error_logs;
+/
