@@ -4,7 +4,7 @@
    DESCRIPTION:  Stores customer account details including
                  balance, account type, and status.
    AUTHOR:       Akshay
-   CREATED ON:   (Use BANK during execution)
+   CREATED ON:   27/04/2026
    ============================================================ */
 
 
@@ -148,3 +148,4 @@ ON a.customer_id = c.customer_id;
 
 -- Retrieve all records from accounts table
 SELECT * FROM accounts;
+
