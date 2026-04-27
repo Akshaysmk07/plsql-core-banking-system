@@ -200,7 +200,7 @@ END;
    TEST CASE 1: VALID UPI TRANSFER
    ============================================================ */
 BEGIN
-    transfer_funds(201, 202, 500, 'UPI');
+    transfer_funds(301, 302, 500, 'UPI');
 END;
 /
 

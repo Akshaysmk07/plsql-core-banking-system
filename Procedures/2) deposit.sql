@@ -19,27 +19,27 @@ CREATE OR REPLACE PROCEDURE deposit (
 IS
     -- Variable to store account status
     v_status accounts.status%TYPE;
+
+    -- Transaction ID for linking ledger
+    v_txn_id NUMBER;
 BEGIN
     /* ----------------------------------------------------------
-       STEP 2: INPUT VALIDATION
+       STEP 1: INPUT VALIDATION
        ---------------------------------------------------------- */
 
-    -- Validate account ID
     IF p_account_id IS NULL THEN
         RAISE_APPLICATION_ERROR(-20020, 'Account ID cannot be NULL');
     END IF;
 
-    -- Validate deposit amount
     IF p_amount IS NULL OR p_amount <= 0 THEN
         RAISE_APPLICATION_ERROR(-20021, 'Deposit amount must be greater than zero');
     END IF;
 
 
     /* ----------------------------------------------------------
-       STEP 3: FETCH ACCOUNT STATUS (VALIDATES EXISTENCE)
+       STEP 2: FETCH ACCOUNT STATUS
        ---------------------------------------------------------- */
 
-    -- Retrieve account status
     SELECT status
     INTO v_status
     FROM accounts
@@ -47,66 +47,81 @@ BEGIN
 
 
     /* ----------------------------------------------------------
-       STEP 4: CHECK ACCOUNT STATUS
+       STEP 3: VALIDATE STATUS
        ---------------------------------------------------------- */
 
-    -- Ensure account is active
     IF v_status != 'ACTIVE' THEN
         RAISE_APPLICATION_ERROR(-20022, 'Account is not ACTIVE');
     END IF;
 
 
     /* ----------------------------------------------------------
-       STEP 5: UPDATE ACCOUNT BALANCE
+       STEP 4: UPDATE BALANCE
        ---------------------------------------------------------- */
 
-    -- Add deposit amount to balance
     UPDATE accounts
     SET balance = balance + p_amount
     WHERE account_id = p_account_id;
 
 
     /* ----------------------------------------------------------
-       STEP 6: INSERT TRANSACTION RECORD
+       STEP 5: INSERT TRANSACTION
        ---------------------------------------------------------- */
 
-    -- Log deposit transaction
+    v_txn_id := transactions_seq.NEXTVAL;
+
     INSERT INTO transactions (
         txn_id,
         from_account,
         to_account,
         amount,
         txn_type,
+        txn_channel,
+        charge_amount,
         status
     ) VALUES (
-        transactions_seq.NEXTVAL,
+        v_txn_id,
         NULL,
         p_account_id,
         p_amount,
         'DEPOSIT',
+        'CASH',        -- or SYSTEM / UPI based on design
+        0,
         'SUCCESS'
     );
 
 
     /* ----------------------------------------------------------
-       STEP 7: COMMIT TRANSACTION
+       STEP 6: INSERT LEDGER ENTRY 
        ---------------------------------------------------------- */
 
-    -- Persist changes (Durability - ACID property)
+    INSERT INTO ledger_entries (
+        ledger_id,
+        account_id,
+        txn_id,
+        entry_type,
+        amount
+    ) VALUES (
+        ledger_seq.NEXTVAL,
+        p_account_id,
+        v_txn_id,
+        'CREDIT',
+        p_amount
+    );
+
+
+    /* ----------------------------------------------------------
+       STEP 7: COMMIT
+       ---------------------------------------------------------- */
+
     COMMIT;
 
 
-/* ============================================================
-   STEP 8: EXCEPTION HANDLING
-   ============================================================ */
-
 EXCEPTION
-    -- Handle case where account does not exist
     WHEN NO_DATA_FOUND THEN
         ROLLBACK;
         RAISE_APPLICATION_ERROR(-20001, 'Account does not exist');
 
-    -- Handle unexpected system errors
     WHEN OTHERS THEN
         ROLLBACK;
         RAISE_APPLICATION_ERROR(-20023, 'Deposit failed: ' || SQLERRM);
@@ -129,7 +144,7 @@ SET SERVEROUTPUT ON;
 
 -- Deposit into valid account
 BEGIN
-    deposit(201, 20000);
+    deposit(301, 20000);
 END;
 /
 
