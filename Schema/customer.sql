@@ -64,3 +64,4 @@ COMMIT;
 
 -- Retrieve all customer records
 SELECT * FROM customers;
+

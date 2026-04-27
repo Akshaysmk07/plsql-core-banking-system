@@ -17,10 +17,10 @@ CREATE TABLE accounts (
     -- Unique account identifier (Primary Key)
     account_id      NUMBER PRIMARY KEY,
     
-    -- Name of the account holder
+    -- Name of the account holder (to be replaced by customer_id)
     customer_name   VARCHAR2(100),
     
-    -- Current account balance (2 decimal precision for currency)
+    -- Current account balance (currency with 2 decimal precision)
     balance         NUMBER(12,2) DEFAULT 0,
     
     -- Type of account (SAVINGS / CURRENT)
@@ -29,7 +29,7 @@ CREATE TABLE accounts (
     -- Account status (ACTIVE / INACTIVE)
     status          VARCHAR2(10) DEFAULT 'ACTIVE',
     
-    -- Date when account was created
+    -- Record creation date
     created_date    DATE DEFAULT SYSDATE
 );
 
@@ -38,13 +38,12 @@ CREATE TABLE accounts (
    STEP 2: ADD CONSTRAINTS (DATA VALIDATION RULES)
    ============================================================ */
 
--- Ensure account status is only ACTIVE or INACTIVE
+-- Ensure account status is restricted to valid values
 ALTER TABLE accounts 
 ADD CONSTRAINT chk_status 
 CHECK (status IN ('ACTIVE', 'INACTIVE'));
 
-
--- Ensure account type is only SAVINGS or CURRENT
+-- Ensure account type is restricted to valid values
 ALTER TABLE accounts 
 ADD CONSTRAINT chk_acc_type 
 CHECK (account_type IN ('SAVINGS', 'CURRENT'));
@@ -73,12 +72,78 @@ VALUES (
    STEP 4: COMMIT TRANSACTION
    ============================================================ */
 
--- Save changes permanently (Durability - ACID property)
+-- Persist changes (Durability - ACID property)
 COMMIT;
 
 
 /* ============================================================
    STEP 5: VERIFY DATA
+   ============================================================ */
+
+-- Retrieve all records from accounts table
+SELECT * FROM accounts;
+
+
+/* ============================================================
+   STEP 6: NORMALIZATION (REMOVE REDUNDANT COLUMN) VERSION 2 UPDATE
+   ============================================================ */
+
+-- Drop customer_name to avoid data duplication
+ALTER TABLE accounts DROP COLUMN customer_name;
+
+-- Add customer_id to establish relationship with customers table
+ALTER TABLE accounts 
+ADD customer_id NUMBER;
+
+
+/* ============================================================
+   STEP 7: ADD FOREIGN KEY CONSTRAINT
+   ============================================================ */
+
+-- Link accounts to customers using customer_id
+ALTER TABLE accounts 
+ADD CONSTRAINT fk_customer
+FOREIGN KEY (customer_id)
+REFERENCES customers(customer_id);
+
+
+/* ============================================================
+   STEP 8: INSERT DATA WITH CUSTOMER REFERENCE
+   ============================================================ */
+
+-- Insert account linked to existing customer
+INSERT INTO accounts (
+    account_id,
+    customer_id,
+    balance,
+    account_type
+) VALUES (
+    210,
+    1,
+    5000,
+    'SAVINGS'
+);
+
+-- Persist changes
+COMMIT;
+
+
+/* ============================================================
+   STEP 9: JOIN QUERY (ACCOUNT + CUSTOMER DETAILS)
+   ============================================================ */
+
+-- Retrieve account details along with customer name
+SELECT 
+    a.account_id,
+    c.customer_name,
+    a.balance
+FROM accounts a
+JOIN customers c
+ON a.customer_id = c.customer_id;
+
+
+/* ============================================================
+   STEP 10: FINAL VERIFICATION
    ============================================================ */
 
 -- Retrieve all records from accounts table
