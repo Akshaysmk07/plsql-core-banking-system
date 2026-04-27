@@ -67,7 +67,7 @@ MODIFY txn_channel NOT NULL;
 
 ALTER TABLE transactions 
 ADD CONSTRAINT chk_txn_type_v2
-CHECK (txn_type IN ('DEPOSIT', 'WITHDRAW', 'TRANSFER'));
+CHECK (txn_type IN ('DEPOSIT', 'WITHDRAW', 'TRANSFER', 'REVERSAL'));
 
 ALTER TABLE transactions 
 ADD CONSTRAINT chk_txn_channel
@@ -138,3 +138,10 @@ SELECT * FROM transactions;
 
 ALTER TABLE transactions 
 ADD charge_amount NUMBER(10,2);
+
+ALTER TABLE transactions 
+ADD (
+    reference_txn_id NUMBER,
+    txn_direction    VARCHAR2(10)
+);
+

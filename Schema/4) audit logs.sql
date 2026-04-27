@@ -90,4 +90,4 @@ COMMIT;
    ============================================================ */
 
 -- Retrieve all audit records
-SELECT * FROM audit_logs;
+SELECT * FROM audit_logs order by audit_id desc ;

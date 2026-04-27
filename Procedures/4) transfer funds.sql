@@ -18,7 +18,7 @@ CREATE OR REPLACE PROCEDURE transfer_funds (
 IS
     v_balance         NUMBER;
     v_limit           NUMBER;
-    v_charge          NUMBER;  -- 🔥 MISSING FIX
+    v_charge          NUMBER;  
     v_sender_status   VARCHAR2(10);
     v_receiver_status VARCHAR2(10);
 BEGIN
@@ -137,7 +137,7 @@ BEGIN
         amount,
         txn_type,
         txn_channel,
-        charge_amount,   -- 🔥 IMPORTANT
+        charge_amount,   
         status
     ) VALUES (
         transactions_seq.NEXTVAL,
