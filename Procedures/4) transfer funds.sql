@@ -149,7 +149,35 @@ BEGIN
         v_charge,
         'SUCCESS'
     );
+    -- 🔹 Sender ledger entry
+    INSERT INTO ledger_entries (
+        ledger_id,
+        account_id,
+        txn_id,
+        entry_type,
+        amount
+    ) VALUES (
+        ledger_seq.NEXTVAL,
+        p_from_account,
+        transactions_seq.CURRVAL,
+        'DEBIT',
+        p_amount + v_charge
+    );
 
+    -- 🔹 Receiver ledger entry
+    INSERT INTO ledger_entries (
+        ledger_id,
+        account_id,
+        txn_id,
+        entry_type,
+        amount
+    ) VALUES (
+        ledger_seq.NEXTVAL,
+        p_to_account,
+        transactions_seq.CURRVAL,
+        'CREDIT',
+        p_amount
+    );
     /* ----------------------------------------------------------
        STEP 12: COMMIT
        ---------------------------------------------------------- */

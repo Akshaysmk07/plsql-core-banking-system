@@ -144,7 +144,35 @@ BEGIN
         'CREDIT',
         'SUCCESS'
     );
+   -- Reverse: sender gets money back (CREDIT)
+   INSERT INTO ledger_entries (
+      ledger_id,
+      account_id,
+      txn_id,
+      entry_type,
+      amount
+   ) VALUES (
+      ledger_seq.NEXTVAL,
+      v_from_account,
+      transactions_seq.CURRVAL,
+      'CREDIT',
+      v_amount + v_charge
+   );
 
+   -- Reverse: receiver loses money (DEBIT)
+   INSERT INTO ledger_entries (
+      ledger_id,
+      account_id,
+      txn_id,
+      entry_type,
+      amount
+   ) VALUES (
+      ledger_seq.NEXTVAL,
+      v_to_account,
+      transactions_seq.CURRVAL,
+      'DEBIT',
+      v_amount
+   );
 
     /* ----------------------------------------------------------
        STEP 8: COMMIT TRANSACTION
@@ -177,7 +205,7 @@ END;
 
 -- Perform a sample transfer
 BEGIN
-    transfer_funds(201, 202, 10, 'IMPS');
+    transfer_funds(101, 201, 100, 'IMPS');
 END;
 /
 
@@ -195,7 +223,7 @@ SELECT * FROM transactions ORDER BY txn_id DESC;
 
 -- Replace with actual txn_id
 BEGIN
-    reverse_transaction(51);
+    reverse_transaction(74);
 END;
 /
 
