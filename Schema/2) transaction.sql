@@ -65,13 +65,21 @@ MODIFY txn_type NOT NULL;
 ALTER TABLE transactions 
 MODIFY txn_channel NOT NULL;
 
-ALTER TABLE transactions 
-ADD CONSTRAINT chk_txn_type_v2
-CHECK (txn_type IN ('DEPOSIT', 'WITHDRAW', 'TRANSFER', 'REVERSAL'));
+ALTER TABLE transactions ADD CONSTRAINT chk_txn_type_v2
+CHECK (txn_type IN (
+    'DEPOSIT', 'WITHDRAW', 'TRANSFER', 'REVERSAL', 'INTEREST'
+));
 
 ALTER TABLE transactions 
 ADD CONSTRAINT chk_txn_channel
-CHECK (txn_channel IN ('UPI', 'IMPS', 'NEFT', 'ATM', 'CASH'));
+CHECK (txn_channel IN (
+    'UPI', 
+    'IMPS', 
+    'NEFT', 
+    'ATM', 
+    'CASH',
+    'SYSTEM'   
+));
 
 -- Restrict transaction status to valid values
 

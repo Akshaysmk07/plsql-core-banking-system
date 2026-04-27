@@ -149,3 +149,11 @@ ON a.customer_id = c.customer_id;
 -- Retrieve all records from accounts table
 SELECT * FROM accounts;
 
+
+/* ============================================================
+   ADD INTEREST RATE COLUMN
+   ============================================================ */
+
+-- Add interest_rate column with default value (4%)
+ALTER TABLE accounts 
+ADD interest_rate NUMBER(5,2) DEFAULT 4;
