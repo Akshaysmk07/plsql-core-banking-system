@@ -1,113 +1,238 @@
-# 🏦 Mini Core Banking System (PL/SQL)
+# 🏦 Mini Core Banking Transaction Processing System (V1 + V2)
 
-A **production-grade simulation of a Core Banking System** built using Oracle PL/SQL.
-This project demonstrates how real banking systems handle **transactions, concurrency, consistency, and failure scenarios** using database-level logic.
+A **production-grade Core Banking System simulation** built using Oracle PL/SQL.
+
+This project demonstrates how real banking systems handle:
+
+* Transactions
+* Concurrency
+* Ledger accounting
+* Error handling
+* Audit tracking
+* Scheduled processing
 
 ---
 
-# 🚀 Project Overview
+# 🎯 PROJECT EVOLUTION
 
-This system simulates core banking operations such as:
+## ✅ Version 1 — Core Banking Basics
+
+Implements fundamental banking operations:
 
 * Account creation
-* Deposits & withdrawals
-* Fund transfers between accounts
-* Transaction tracking
-* Audit logging (trigger-based)
-* Error logging (autonomous transactions)
+* Deposit & Withdrawal
+* Fund Transfer
+* Transaction logging
+* Basic audit & error logging
 
-The design ensures **ACID-compliant transaction processing** and **data consistency under concurrent operations**.
-
----
-
-# 🔥 Key Features
-
-## 🏦 Core Banking Operations
-
-* Create account
-* Deposit money
-* Withdraw money
-* Transfer funds
-
-## 🔒 Transaction Safety
-
-* Atomic transactions (commit/rollback)
-* Savepoints for partial rollback
-* Balance validation
-
-## ⚡ Concurrency Handling
-
-* Row-level locking using `SELECT ... FOR UPDATE`
-* Deadlock prevention (ordered locking)
-* Safe multi-session execution
-
-## 🧾 Logging & Auditing
-
-* Transaction logs
-* Audit logs using triggers
-* Error logging using autonomous transactions
-
-## 🧠 Exception Handling
-
-* Business errors (invalid account, insufficient funds)
-* System errors
-* Structured error propagation
+👉 Focus: **Transaction correctness + ACID compliance**
 
 ---
 
-# 🧠 Concepts Implemented
+## 🚀 Version 2 — Enterprise Banking System
+
+Upgrades system to **real-world banking architecture**:
+
+* Customer + Multi-account support
+* UPI / IMPS / NEFT simulation
+* Charges & fees system
+* Ledger-based accounting (double-entry)
+* Transaction reversal system
+* Interest calculation engine
+* Scheduled transactions (EMI / Auto debit)
+* Reconciliation system
+* Production-grade logging
+
+👉 Focus: **Scalability + Auditability + Financial correctness**
+
+---
+
+# 🧠 KEY CONCEPTS IMPLEMENTED
 
 * ACID Properties
 * PL/SQL Procedures
-* Cursors
-* Triggers
-* Sequences
-* Exception Handling
-* Row-level Locking
-* Savepoints
+* Row-Level Locking (`FOR UPDATE`)
+* Savepoints & Rollback
+* Double-entry Ledger System
+* Exception Handling (`RAISE_APPLICATION_ERROR`)
 * Autonomous Transactions (`PRAGMA AUTONOMOUS_TRANSACTION`)
+* Batch Processing (Interest / Scheduler)
+* Reconciliation Logic
 
 ---
 
-# 🏗️ Architecture
+# 🏗️ SYSTEM ARCHITECTURE
 
-## 🔄 System Flow
+## 🔄 Flow Overview
 
-![Architecture Diagram](docs/architecture.png)
+![Architecture](docs/final_architecture.png)
 
-```
-User Action
-   ↓
-PL/SQL Procedure
-   ↓
-Accounts Table Update
-   ↓
-Transaction Insert
-   ↓
-Audit Trigger Fires
-   ↓
-Audit Logs Stored
-   ↓
-(If Error) → Error Log Stored
-```
+### Flow:
+
+User / Channel (ATM / UPI / Scheduler)
+↓
+PL/SQL Procedures
+↓
+Accounts Update
+↓
+Transactions Table
+↓
+Ledger Entries (Debit/Credit)
+↓
+Audit Trigger
+↓
+Audit Logs
+
+(If failure) → Error Logs (Autonomous Transaction)
 
 ---
 
-# 📂 Project Structure
+# 🏦 CORE FEATURES
+
+---
+
+## 💸 1. Account Management
+
+* Create account (linked to customer)
+* Opening balance with ledger entry
+* Status control (ACTIVE / INACTIVE)
+
+---
+
+## 💰 2. Transactions
+
+* Deposit
+* Withdraw
+* Transfer (UPI / IMPS / NEFT)
+
+### Safety Features:
+
+* Balance validation
+* Same account prevention
+* Transaction logging
+
+---
+
+## 🔒 3. Concurrency Control
+
+* Row-level locking (`SELECT ... FOR UPDATE`)
+* Ordered locking (deadlock prevention)
+* Multi-session safety
+
+✔ Prevents **double spending**
+
+---
+
+## 📘 4. Ledger System (V2 🔥)
+
+* Double-entry accounting
+* Debit / Credit entries
+* Linked with every transaction
+
+✔ Ensures **financial correctness**
+
+---
+
+## 🔄 5. Transaction Reversal
+
+* Reverse any transaction
+* Prevent double reversal
+* Status-based control
+
+---
+
+## 💸 6. Charges & Fees
+
+* Channel-based charges:
+
+  * UPI → Free
+  * IMPS → Instant charges
+  * NEFT → Batch charges
+
+---
+
+## 💰 7. Interest Engine
+
+* Applies monthly interest
+* Only for savings accounts
+* Batch processing with cursor
+
+---
+
+## 🔁 8. Scheduled Transactions
+
+* EMI / Auto debit system
+* Daily / Monthly execution
+* Failure handling with logging
+
+---
+
+## 🔍 9. Reconciliation System
+
+* Compares:
+
+  * Account balance
+  * Ledger balance
+
+✔ Detects inconsistencies
+
+---
+
+## 🧾 10. Logging & Audit
+
+### Audit Logs
+
+* Trigger-based
+* Tracks:
+
+  * Old balance
+  * New balance
+
+### Error Logs
+
+* Autonomous transaction
+* Captures:
+
+  * Error message
+  * Procedure name
+  * Reference ID
+
+---
+
+# 📊 REPORTS
+
+* Daily Transactions
+* Failed Transactions
+* Top Accounts
+
+---
+
+# 📂 PROJECT STRUCTURE
 
 ```
 mini-core-banking-system/
 │
-├── README.md
+├── docs/
+│   ├── architecture.png
+│   ├── final_architecture.png
+│   ├── project_understanding.pdf
+│   ├── Version1.md
+│   ├── Version2.md
 │
 ├── schema/
 │   ├── accounts.sql
+│   ├── customers.sql
 │   ├── transactions.sql
-│   ├── audit_logs.sql
+│   ├── ledger_entries.sql
+│   ├── scheduled_transactions.sql
 │   ├── error_logs.sql
+│   ├── audit_logs.sql
+│   ├── charges.sql
+│   ├── transaction_types.sql
 │
 ├── sequences/
-│   ├── transaction_seq.sql
+│   ├── transactions_seq.sql
+│   ├── ledger_seq.sql
 │   ├── audit_seq.sql
 │   ├── error_seq.sql
 │
@@ -116,9 +241,13 @@ mini-core-banking-system/
 │   ├── deposit.sql
 │   ├── withdraw.sql
 │   ├── transfer_funds.sql
+│   ├── reverse_transaction.sql
+│   ├── apply_interest.sql
+│   ├── process_scheduled_txns.sql
+│   ├── reconciliation_system.sql
 │
 ├── triggers/
-│   ├── audit_trigger.sql
+│   ├── trg_audit_accounts.sql
 │
 ├── utils/
 │   ├── log_error.sql
@@ -128,74 +257,58 @@ mini-core-banking-system/
 │   ├── failed_transactions.sql
 │   ├── top_accounts.sql
 │
-├── test_cases/
-│   ├── full_system_test.sql
+├── indexes/
+│   ├── index.sql
 │
-└── docs/
-    ├── architecture.md
-
+└── README.md
 ```
 
 ---
 
-# 🧪 Test Coverage
+# 🧪 TEST COVERAGE
 
-## ✅ Normal Scenarios
+## ✅ Normal Cases
 
 * Account creation
-* Successful transfer
-* Deposit & withdrawal
+* Deposit / Withdrawal
+* Transfer
+* Interest application
 
-## ❌ Failure Scenarios
+## ❌ Failure Cases
 
-* Insufficient balance
 * Invalid account
+* Insufficient balance
 * Same account transfer
-* Negative amount
+* Inactive account
 
 ## ⚠️ Edge Cases
 
 * Large transactions
-* Zero balance handling
+* Zero balance
+* Multiple scheduled jobs
 
 ## 🔒 Concurrency Testing
 
 * Multi-session transfers
-* Lock handling
+* Locking verification
 * No double spending
 
 ---
 
-# 🧪 Sample Test Case
-
-```sql
-BEGIN
-    transfer_funds(201, 202, 1000);
-END;
-/
-```
-
-### ✔ Expected Result:
-
-* Sender balance decreases
-* Receiver balance increases
-* Transaction recorded
-* Audit log created
-
----
-
-# 🛠️ How to Run
+# 🛠️ HOW TO RUN
 
 1. Open Oracle SQL Developer
-2. Run scripts in order:
 
-```text
+2. Execute scripts in order:
+
+```
 1. schema/
 2. sequences/
-3. procedures/
-4. triggers/
-5. utils/
-6. test_cases/
+3. indexes/
+4. utils/
+5. procedures/
+6. triggers/
+7. reports/
 ```
 
 3. Enable output:
@@ -206,86 +319,62 @@ SET SERVEROUTPUT ON;
 
 ---
 
-# 🔐 Concurrency Handling (Important)
-
-Transfers use **row-level locking**:
-
-```sql
-SELECT * FROM accounts
-WHERE account_id = :id
-FOR UPDATE;
-```
-
-✔ Prevents double spending
-✔ Ensures consistency
+# 🔐 IMPORTANT DESIGN DECISIONS
 
 ---
 
-# ⚡ Error Logging (Critical Feature)
+## 🔒 Why FOR UPDATE?
 
-Uses:
+To prevent:
 
-```sql
-PRAGMA AUTONOMOUS_TRANSACTION;
-```
-
-✔ Logs errors even if main transaction fails
-✔ Ensures no data loss for debugging
+👉 Multiple users modifying same account simultaneously
 
 ---
 
-# 🧾 Audit System
+## 📘 Why Ledger?
 
-* Trigger-based logging
-* Captures:
+To ensure:
 
-  * Old balance
-  * New balance
-  * Timestamp
+👉 Balance can be reconstructed anytime
 
 ---
 
-# 🏆 Key Highlights
+## 🔁 Why Reconciliation?
 
-* Designed like a real banking system
-* Handles concurrent transactions safely
-* Prevents partial updates using rollback
-* Maintains full audit and error traceability
+To detect:
+
+👉 Data inconsistencies
 
 ---
 
-# 💡 Real-World Relevance
+## ⚡ Why Autonomous Logging?
 
-This system is inspired by real banking platforms like:
+To ensure:
+
+👉 Errors are logged even after rollback
+
+---
+
+# 💡 REAL-WORLD INSPIRATION
+
+Inspired by:
 
 * Oracle Flexcube
-* Core banking transaction engines
-
-Implements:
-
-* Transaction safety
-* Logging
-* Compliance-ready architecture
+* Core Banking Transaction Engines
 
 ---
 
-# 📈 Future Improvements
-
-* Retry mechanism for failed transactions
-* Bulk transaction processing
-* Index optimization
-* Partitioned tables
-* Scheduler jobs for reporting
-
----
-
-
-# 👨‍💻 Author
+# 👨‍💻 AUTHOR
 
 Akshay Kumar
 
 ---
 
-# ⭐ If you found this useful
+# ⭐ SUPPORT
 
-Give a ⭐ on GitHub and share!
+If you found this project useful:
+
+👉 Give a ⭐ on GitHub
+👉 Share with others
+
+---
