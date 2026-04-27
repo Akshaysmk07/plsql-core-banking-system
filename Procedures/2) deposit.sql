@@ -129,7 +129,7 @@ SET SERVEROUTPUT ON;
 
 -- Deposit into valid account
 BEGIN
-    deposit(101, 2000);
+    deposit(201, 20000);
 END;
 /
 
