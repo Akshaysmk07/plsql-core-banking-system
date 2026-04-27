@@ -74,9 +74,11 @@ ADD CONSTRAINT chk_txn_channel
 CHECK (txn_channel IN ('UPI', 'IMPS', 'NEFT', 'ATM', 'CASH'));
 
 -- Restrict transaction status to valid values
+
+
 ALTER TABLE transactions 
 ADD CONSTRAINT chk_status_txn 
-CHECK (status IN ('SUCCESS', 'FAILED'));
+CHECK (status IN ('SUCCESS', 'FAILED','REVERSED'));
 
 
 /* ============================================================
