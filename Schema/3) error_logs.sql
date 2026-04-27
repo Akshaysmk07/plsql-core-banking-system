@@ -64,4 +64,4 @@ COMMIT;
    ============================================================ */
 
 -- Retrieve all logged errors
-SELECT * FROM error_logs;
+SELECT * FROM error_logs order by error_id desc;

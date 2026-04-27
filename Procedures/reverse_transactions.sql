@@ -189,11 +189,27 @@ BEGIN
 EXCEPTION
     -- Handle invalid transaction ID
     WHEN NO_DATA_FOUND THEN
+
+        --  LOG BUSINESS ERROR
+        log_error(
+            'Transaction not found for reversal',
+            'REVERSE_TRANSACTION',
+            p_txn_id
+        );
+
         RAISE_APPLICATION_ERROR(-20050, 'Transaction not found');
 
     -- Handle unexpected system errors
     WHEN OTHERS THEN
         ROLLBACK;
+
+        --  LOG SYSTEM ERROR
+        log_error(
+            SQLERRM,
+            'REVERSE_TRANSACTION',
+            p_txn_id
+        );
+
         RAISE_APPLICATION_ERROR(-20051, 'Reversal failed: ' || SQLERRM);
 END;
 /

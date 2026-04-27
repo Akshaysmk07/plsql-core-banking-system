@@ -10,17 +10,12 @@
    ============================================================ */
 
 
-/* ============================================================
-   STEP 1: CREATE PROCEDURE
-   ============================================================ */
-
 CREATE OR REPLACE PROCEDURE process_scheduled_txns
 IS
     /* ----------------------------------------------------------
        CURSOR: FETCH DUE SCHEDULED TRANSACTIONS
        ---------------------------------------------------------- */
 
-    -- Select active schedules ready for execution
     CURSOR sched_cursor IS
         SELECT schedule_id,
                from_account,
@@ -35,17 +30,15 @@ IS
 
 BEGIN
     /* ----------------------------------------------------------
-       STEP 2: PROCESS EACH SCHEDULE
+       STEP 1: PROCESS EACH SCHEDULE
        ---------------------------------------------------------- */
 
     FOR rec IN sched_cursor LOOP
 
         BEGIN
             /* --------------------------------------------------
-               STEP 2.1: EXECUTE FUND TRANSFER
+               STEP 1.1: EXECUTE TRANSFER
                -------------------------------------------------- */
-
-            -- Invoke transfer procedure
             transfer_funds(
                 rec.from_account,
                 rec.to_account,
@@ -53,12 +46,9 @@ BEGIN
                 rec.txn_channel
             );
 
-
             /* --------------------------------------------------
-               STEP 2.2: UPDATE NEXT EXECUTION DATE
+               STEP 1.2: UPDATE NEXT DATE
                -------------------------------------------------- */
-
-            -- Update based on frequency
             IF rec.frequency = 'DAILY' THEN
 
                 UPDATE scheduled_transactions
@@ -73,21 +63,20 @@ BEGIN
 
             END IF;
 
-
         /* ------------------------------------------------------
-           STEP 2.3: HANDLE FAILURES
+           STEP 1.3: HANDLE FAILURE + LOGGING 🔥
            ------------------------------------------------------ */
-
         EXCEPTION
             WHEN OTHERS THEN
 
-                -- Log error message (for debugging)
-                DBMS_OUTPUT.PUT_LINE(
-                    'Error in schedule_id ' || rec.schedule_id || 
-                    ': ' || SQLERRM
+                -- 🔥 LOG ERROR (PRODUCTION STYLE)
+                log_error(
+                    SQLERRM,
+                    'PROCESS_SCHEDULED_TXNS',
+                    rec.from_account
                 );
 
-                -- Mark schedule as FAILED
+                -- Mark as failed
                 UPDATE scheduled_transactions
                 SET status = 'FAILED'
                 WHERE schedule_id = rec.schedule_id;
@@ -96,17 +85,14 @@ BEGIN
 
     END LOOP;
 
-
     /* ----------------------------------------------------------
-       STEP 3: COMMIT TRANSACTION
+       STEP 2: COMMIT
        ---------------------------------------------------------- */
 
-    -- Persist all updates
     COMMIT;
 
 END;
 /
-
 /* ============================================================
    TEST CASE 1: VIEW SCHEDULED TRANSACTIONS
    ============================================================ */

@@ -33,6 +33,9 @@ CREATE TABLE ledger_entries (
     created_date   DATE DEFAULT SYSDATE
 );
 
+ALTER TABLE ledger_entries 
+ADD CONSTRAINT fk_ledger_acc 
+FOREIGN KEY (account_id) REFERENCES accounts(account_id);
 
 /* ============================================================
    STEP 2: ADD CONSTRAINTS (DATA VALIDATION)

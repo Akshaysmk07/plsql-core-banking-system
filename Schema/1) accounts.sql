@@ -48,7 +48,9 @@ ALTER TABLE accounts
 ADD CONSTRAINT chk_acc_type 
 CHECK (account_type IN ('SAVINGS', 'CURRENT'));
 
-
+ALTER TABLE accounts 
+ADD CONSTRAINT fk_customer 
+FOREIGN KEY (customer_id) REFERENCES customers(customer_id);
 /* ============================================================
    STEP 3: INSERT SAMPLE DATA
    ============================================================ */

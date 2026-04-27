@@ -8,80 +8,91 @@ IS
         AND status = 'ACTIVE';
 
     v_interest NUMBER;
-
-    -- Transaction id for linking ledger
-    v_txn_id NUMBER;
+    v_txn_id   NUMBER;
 BEGIN
     FOR acc IN acc_cursor LOOP
 
-        /* ----------------------------------------------------------
-           STEP 1: CALCULATE INTEREST
-           ---------------------------------------------------------- */
-        v_interest := (acc.balance * acc.interest_rate) / (100 * 12);
+        BEGIN
+            /* ----------------------------------------------------------
+               STEP 1: CALCULATE INTEREST
+               ---------------------------------------------------------- */
+            v_interest := (acc.balance * acc.interest_rate) / (100 * 12);
 
-        -- Skip if interest is 0
-        IF v_interest <= 0 THEN
-            CONTINUE;
-        END IF;
+            -- Skip if interest is 0
+            IF v_interest <= 0 THEN
+                CONTINUE;
+            END IF;
 
-        /* ----------------------------------------------------------
-           STEP 2: UPDATE BALANCE
-           ---------------------------------------------------------- */
-        UPDATE accounts
-        SET balance = balance + v_interest
-        WHERE account_id = acc.account_id;
+            /* ----------------------------------------------------------
+               STEP 2: UPDATE BALANCE
+               ---------------------------------------------------------- */
+            UPDATE accounts
+            SET balance = balance + v_interest
+            WHERE account_id = acc.account_id;
 
-        /* ----------------------------------------------------------
-           STEP 3: INSERT TRANSACTION
-           ---------------------------------------------------------- */
-        v_txn_id := transactions_seq.NEXTVAL;
+            /* ----------------------------------------------------------
+               STEP 3: INSERT TRANSACTION
+               ---------------------------------------------------------- */
+            v_txn_id := transactions_seq.NEXTVAL;
 
-        INSERT INTO transactions (
-            txn_id,
-            from_account,
-            to_account,
-            amount,
-            txn_type,
-            txn_channel,
-            charge_amount,
-            reference_txn_id,
-            txn_direction,
-            status
-        ) VALUES (
-            v_txn_id,
-            NULL,
-            acc.account_id,
-            v_interest,
-            'INTEREST',
-            'SYSTEM',
-            0,
-            NULL,
-            'CREDIT',
-            'SUCCESS'
-        );
+            INSERT INTO transactions (
+                txn_id,
+                from_account,
+                to_account,
+                amount,
+                txn_type,
+                txn_channel,
+                charge_amount,
+                reference_txn_id,
+                txn_direction,
+                status
+            ) VALUES (
+                v_txn_id,
+                NULL,
+                acc.account_id,
+                v_interest,
+                'INTEREST',
+                'SYSTEM',
+                0,
+                NULL,
+                'CREDIT',
+                'SUCCESS'
+            );
 
-        /* ----------------------------------------------------------
-           STEP 4: INSERT LEDGER ENTRY 🔥
-           ---------------------------------------------------------- */
-        INSERT INTO ledger_entries (
-            ledger_id,
-            account_id,
-            txn_id,
-            entry_type,
-            amount
-        ) VALUES (
-            ledger_seq.NEXTVAL,
-            acc.account_id,
-            v_txn_id,
-            'CREDIT',
-            v_interest
-        );
+            /* ----------------------------------------------------------
+               STEP 4: INSERT LEDGER ENTRY
+               ---------------------------------------------------------- */
+            INSERT INTO ledger_entries (
+                ledger_id,
+                account_id,
+                txn_id,
+                entry_type,
+                amount
+            ) VALUES (
+                ledger_seq.NEXTVAL,
+                acc.account_id,
+                v_txn_id,
+                'CREDIT',
+                v_interest
+            );
+
+        EXCEPTION
+            WHEN OTHERS THEN
+                --  LOG ERROR PER ACCOUNT (IMPORTANT)
+                log_error(SQLERRM,
+                          'APPLY_INTEREST',
+                          acc.account_id);
+
+                -- Do NOT stop entire batch
+                CONTINUE;
+        END;
 
     END LOOP;
 
     COMMIT;
 
 END;
+/
 /
 -- check balance
 SELECT account_id, balance FROM accounts WHERE account_id = 301;

@@ -138,10 +138,22 @@ BEGIN
 EXCEPTION
     WHEN DUP_VAL_ON_INDEX THEN
         ROLLBACK;
+
+        --  LOG ERROR
+        log_error('Duplicate account creation attempt',
+                  'CREATE_ACCOUNT',
+                  p_account_id);
+
         RAISE_APPLICATION_ERROR(-20015, 'Account already exists');
 
     WHEN OTHERS THEN
         ROLLBACK;
+
+        --  LOG ACTUAL ERROR
+        log_error(SQLERRM,
+                  'CREATE_ACCOUNT',
+                  p_account_id);
+
         RAISE_APPLICATION_ERROR(-20016, 'System error: ' || SQLERRM);
 END;
 /

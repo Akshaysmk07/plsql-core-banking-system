@@ -129,10 +129,22 @@ BEGIN
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
         ROLLBACK;
+
+        --  LOG BUSINESS ERROR
+        log_error('Account not found during withdraw',
+                  'WITHDRAW',
+                  p_account_id);
+
         RAISE_APPLICATION_ERROR(-20001, 'Account does not exist');
 
     WHEN OTHERS THEN
         ROLLBACK;
+
+        --  LOG SYSTEM ERROR
+        log_error(SQLERRM,
+                  'WITHDRAW',
+                  p_account_id);
+
         RAISE_APPLICATION_ERROR(-20033, 'Withdrawal failed: ' || SQLERRM);
 END;
 /

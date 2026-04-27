@@ -53,8 +53,8 @@ INSERT INTO scheduled_transactions (
     frequency
 ) VALUES (
     1,
-    201,
-    202,
+    301,
+    302,
     1000,
     'IMPS',
     SYSDATE,
@@ -62,3 +62,4 @@ INSERT INTO scheduled_transactions (
 );
 
 COMMIT;
+
