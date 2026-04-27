@@ -136,3 +136,5 @@ SELECT * FROM transactions;
 
 
 
+ALTER TABLE transactions 
+ADD charge_amount NUMBER(10,2);

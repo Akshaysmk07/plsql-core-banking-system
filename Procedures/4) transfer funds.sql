@@ -18,6 +18,7 @@ CREATE OR REPLACE PROCEDURE transfer_funds (
 IS
     v_balance         NUMBER;
     v_limit           NUMBER;
+    v_charge          NUMBER;  -- 🔥 MISSING FIX
     v_sender_status   VARCHAR2(10);
     v_receiver_status VARCHAR2(10);
 BEGIN
@@ -34,7 +35,7 @@ BEGIN
     END IF;
 
     /* ----------------------------------------------------------
-       STEP 2: CREATE SAVEPOINT (EARLY)
+       STEP 2: SAVEPOINT
        ---------------------------------------------------------- */
     SAVEPOINT before_transaction;
 
@@ -53,7 +54,7 @@ BEGIN
     END IF;
 
     /* ----------------------------------------------------------
-       STEP 5: LOCK ACCOUNTS (DEADLOCK PREVENTION)
+       STEP 5: LOCK ACCOUNTS (ORDERED)
        ---------------------------------------------------------- */
     IF p_from_account < p_to_account THEN
 
@@ -82,7 +83,7 @@ BEGIN
     END IF;
 
     /* ----------------------------------------------------------
-       STEP 6: VALIDATE ACCOUNT STATUS
+       STEP 6: STATUS VALIDATION
        ---------------------------------------------------------- */
 
     IF v_sender_status != 'ACTIVE' THEN
@@ -94,23 +95,31 @@ BEGIN
     END IF;
 
     /* ----------------------------------------------------------
-       STEP 7: CHECK BALANCE
+       STEP 7: FETCH CHARGES
        ---------------------------------------------------------- */
 
-    IF v_balance < p_amount THEN
-        RAISE_APPLICATION_ERROR(-20002, 'Insufficient balance');
+    SELECT charge_amount INTO v_charge
+    FROM transaction_charges
+    WHERE txn_channel = p_txn_type;
+
+    /* ----------------------------------------------------------
+       STEP 8: BALANCE CHECK (INCLUDING CHARGES)
+       ---------------------------------------------------------- */
+
+    IF v_balance < (p_amount + v_charge) THEN
+        RAISE_APPLICATION_ERROR(-20045, 'Insufficient balance including charges');
     END IF;
 
     /* ----------------------------------------------------------
-       STEP 8: DEBIT SENDER
+       STEP 9: DEBIT SENDER
        ---------------------------------------------------------- */
 
     UPDATE accounts
-    SET balance = balance - p_amount
+    SET balance = balance - (p_amount + v_charge)
     WHERE account_id = p_from_account;
 
     /* ----------------------------------------------------------
-       STEP 9: CREDIT RECEIVER
+       STEP 10: CREDIT RECEIVER
        ---------------------------------------------------------- */
 
     UPDATE accounts
@@ -118,7 +127,7 @@ BEGIN
     WHERE account_id = p_to_account;
 
     /* ----------------------------------------------------------
-       STEP 10: INSERT TRANSACTION
+       STEP 11: INSERT TRANSACTION
        ---------------------------------------------------------- */
 
     INSERT INTO transactions (
@@ -128,6 +137,7 @@ BEGIN
         amount,
         txn_type,
         txn_channel,
+        charge_amount,   -- 🔥 IMPORTANT
         status
     ) VALUES (
         transactions_seq.NEXTVAL,
@@ -136,15 +146,14 @@ BEGIN
         p_amount,
         'TRANSFER',
         p_txn_type,
+        v_charge,
         'SUCCESS'
     );
 
     /* ----------------------------------------------------------
-       STEP 11: COMMIT
+       STEP 12: COMMIT
        ---------------------------------------------------------- */
     COMMIT;
-
-    DBMS_OUTPUT.PUT_LINE('Transfer successful');
 
 EXCEPTION
     WHEN NO_DATA_FOUND THEN
@@ -163,7 +172,7 @@ END;
    TEST CASE 1: VALID UPI TRANSFER
    ============================================================ */
 BEGIN
-    transfer_funds(201, 202, 5000, 'UPI');
+    transfer_funds(201, 202, 500, 'UPI');
 END;
 /
 
